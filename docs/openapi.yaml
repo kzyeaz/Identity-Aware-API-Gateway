@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Identity Gateway API
+  version: 1.0.0
+  description: Local demo; OAuth client credentials through Keycloak. Project ownership derives from verified JWT subject.
+servers:
+  - url: http://localhost:8088
+security:
+  - oauth: []
+paths:
+  /api/projects:
+    get:
+      summary: List the current subject's most recent projects
+      description: Returns at most 50 projects. No pagination is implemented in this demo.
+      operationId: listProjects
+      security:
+        - oauth: [projects:read]
+      responses:
+        '200':
+          description: Owner-scoped projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Project' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/Limited' }
+    post:
+      summary: Create a project owned by the verified subject
+      operationId: createProject
+      security:
+        - oauth: [projects:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, description]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                description: { type: string, maxLength: 280 }
+      responses:
+        '201':
+          description: Project committed to PostgreSQL
+          headers:
+            Location: { schema: { type: string }, description: Relative URI of the project }
+            X-Request-Id: { schema: { type: string }, description: Gateway-generated correlation ID }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '400': { description: Invalid JSON or DTO constraint violation }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/Limited' }
+  /api/projects/{id}:
+    get:
+      operationId: getProject
+      summary: Get a project belonging to the current subject
+      security:
+        - oauth: [projects:read]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Project
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '404': { description: Project does not exist or belongs to another subject }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/Limited' }
+  /api/platform/audit:
+    get:
+      operationId: listAuditEvents
+      summary: Read the 50 most recent project mutation events
+      security:
+        - oauth: [platform:read]
+      responses:
+        '200':
+          description: Audit documents ordered newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    actor: { type: string }
+                    action: { type: string, example: project.created }
+                    resource: { type: string }
+                    requestId: { type: string }
+                    time: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/Limited' }
+  /gateway/overview:
+    get:
+      operationId: getOverview
+      summary: Process-local counters and last 100 project requests
+      security:
+        - oauth: [platform:read]
+      responses:
+        '200':
+          description: Bounded telemetry snapshot; resets on gateway restart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  allowed: { type: integer }
+                  denied: { type: integer }
+                  limited: { type: integer }
+                  p95: { type: number, description: Milliseconds until response commit over the latest 100 events }
+                  startedAt: { type: string, format: date-time }
+                  events: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: http://localhost:8180/realms/identity/protocol/openid-connect/token
+          scopes:
+            projects:read: Read projects owned by the current subject
+            projects:write: Create projects
+            platform:read: Read operational data and metrics
+  schemas:
+    Project:
+      type: object
+      required: [id, owner, name, description, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        owner: { type: string }
+        name: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token. Body may be empty.
+    Forbidden:
+      description: Insufficient scope. Body may be empty.
+    Limited:
+      description: Identity's route token bucket exhausted. Retry after the bucket refills.
+      headers:
+        X-RateLimit-Remaining: { schema: { type: integer } }
+        X-RateLimit-Burst-Capacity: { schema: { type: integer } }
+        X-RateLimit-Replenish-Rate: { schema: { type: integer } }

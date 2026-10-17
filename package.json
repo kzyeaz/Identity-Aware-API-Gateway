@@ -1,0 +1,21 @@
+{
+  "name": "identity-gateway",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "workspaces": ["apps/console", "packages/sdk"],
+  "scripts": {
+    "dev": "npm run dev --workspace=@identity/console",
+    "build": "npm run build --workspace=@identity/sdk && npm run build --workspace=@identity/console",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "demo:live": "node scripts/live-smoke.mjs",
+    "coverage:java": "node scripts/coverage-summary.mjs",
+    "security:summary": "node scripts/security-summary.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "vitest": "^5.0.5"
+  }
+}

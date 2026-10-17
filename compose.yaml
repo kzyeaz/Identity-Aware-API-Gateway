@@ -1,0 +1,108 @@
+name: identity-demo
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: identity-local
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U identity"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  mongo:
+    image: mongo:8.0
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-local-only
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - ./infra/keycloak/identity-realm.json:/opt/keycloak/data/import/identity-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+  platform:
+    build:
+      context: .
+      target: platform
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/identity
+      MONGODB_URI: mongodb://mongo:27017/identity
+      OIDC_JWKS: http://keycloak:8080/realms/identity/protocol/openid-connect/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+  gateway:
+    build:
+      context: .
+      target: gateway
+    environment:
+      REDIS_HOST: redis
+      PLATFORM_URL: http://platform:8081
+      OIDC_JWKS: http://keycloak:8080/realms/identity/protocol/openid-connect/certs
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8088}:8080"
+    depends_on:
+      platform:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+  console:
+    profiles: ["console"]
+    build:
+      context: .
+      dockerfile: apps/console/Dockerfile
+    environment:
+      DEMO_MODE: "false"
+      GATEWAY_URL: http://gateway:8080
+      KEYCLOAK_URL: http://keycloak:8080
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      gateway:
+        condition: service_healthy
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  keycloak-data:

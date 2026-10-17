@@ -1,0 +1,35 @@
+server:
+  port: 8080
+  error:
+    include-message: never
+spring:
+  application:
+    name: identity-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 5s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+identity:
+  issuer: ${OIDC_ISSUER:http://localhost:8180/realms/identity}
+  jwk-set-uri: ${OIDC_JWKS:http://localhost:8180/realms/identity/protocol/openid-connect/certs}
+  audience: identity-api
+  platform-url: ${PLATFORM_URL:http://localhost:8081}
+  rate:
+    replenish: 5
+    burst: 10

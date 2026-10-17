@@ -1,0 +1,62 @@
+{
+  "realm": "identity",
+  "enabled": true,
+  "displayName": "Identity Gateway Demo",
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "registrationAllowed": false,
+  "clientScopes": [
+    {
+      "name": "api-audience",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "false" },
+      "protocolMappers": [{
+        "name": "identity-api-audience",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-audience-mapper",
+        "config": { "included.custom.audience": "identity-api", "id.token.claim": "false", "access.token.claim": "true" }
+      }]
+    },
+    { "name": "projects:read", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true" } },
+    { "name": "projects:write", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true" } },
+    { "name": "platform:read", "protocol": "openid-connect", "attributes": { "include.in.token.scope": "true" } }
+  ],
+  "clients": [
+    {
+      "clientId": "demo-writer",
+      "name": "Demo · project developer",
+      "secret": "writer-local-only",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": ["api-audience", "projects:read", "projects:write"]
+    },
+    {
+      "clientId": "demo-reader",
+      "name": "Demo · read-only integration",
+      "secret": "reader-local-only",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": ["api-audience", "projects:read"]
+    },
+    {
+      "clientId": "console-admin",
+      "name": "Demo · operations console",
+      "secret": "console-local-only",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": ["api-audience", "platform:read"]
+    }
+  ]
+}

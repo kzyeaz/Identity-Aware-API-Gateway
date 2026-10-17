@@ -1,0 +1,23 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: identity-platform
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/identity}
+    username: ${DATABASE_USER:identity}
+    password: ${DATABASE_PASSWORD:identity-local}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/identity}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+identity:
+  issuer: ${OIDC_ISSUER:http://localhost:8180/realms/identity}
+  jwk-set-uri: ${OIDC_JWKS:http://localhost:8180/realms/identity/protocol/openid-connect/certs}

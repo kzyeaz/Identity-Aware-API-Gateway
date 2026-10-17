@@ -1,0 +1,13 @@
+{
+  "name": "@identity/sdk",
+  "version": "1.0.0",
+  "description": "Typed client for the Identity Gateway projects API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": { "build": "tsc", "typecheck": "tsc --noEmit" },
+  "devDependencies": { "typescript": "^5.9.3" },
+  "engines": { "node": ">=20" }
+}
