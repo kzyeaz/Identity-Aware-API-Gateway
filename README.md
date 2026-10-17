@@ -1,6 +1,6 @@
 # Identity — an identity-aware API gateway
 
-A runnable portfolio project that makes API security visible: send a request, inspect the selected identity, observe the gateway decision, and trace a successful write into PostgreSQL and MongoDB.
+A runnable project that makes API security visible: send a request, inspect the selected identity, observe the gateway decision, and trace a successful write into PostgreSQL and MongoDB.
 
 **Stack:** Java / Spring Boot 4, Spring Cloud Gateway, Spring Security, Keycloak (OAuth 2.0 / OIDC), Redis, PostgreSQL, MongoDB, Next.js / React / TypeScript, and a typed developer SDK. Tests use JUnit 6 (Jupiter), Mockito, and Testcontainers 2.
 
@@ -64,17 +64,6 @@ Open http://127.0.0.1:3000. The banner will say **Simulation**. In-memory data i
 
 To develop the UI against the real backend, start `docker compose up -d --build`, copy `apps/console/.env.example` to `apps/console/.env.local`, set `DEMO_MODE=false`, and restart `npm run dev`. The default gateway port is 8088 to avoid common port 8080 conflicts. If you change `GATEWAY_PORT` for Compose, also update `GATEWAY_URL` in your local console environment.
 
-## A five-minute presentation
-
-1. **Overview:** explain the three policies and the difference between observed traffic and a benchmark.
-2. **Playground:** send a GET as the developer. Inspect the response headers and JWT claims.
-3. Switch to the read-only integration and send a POST. Explain why an authenticated caller receives **403**.
-4. Switch to anonymous or malformed-token mode. Explain why these return **401** before routing.
-5. Switch back to the developer and create a project. Find `project.created` in **Audit trail → Project mutations**. Match the correlation ID.
-6. Click **Generate traffic**. Open **Audit trail → Gateway requests** and filter `429`. Explain the identity-based token bucket.
-7. Open **Architecture**, then **Developer SDK**. Explain one design tradeoff and show the runnable SDK example.
-
-See [the interview guide](docs/interview-guide.md) for a detailed script, likely questions, and defensible résumé wording.
 
 ## Architecture
 
